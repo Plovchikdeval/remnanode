@@ -54,7 +54,9 @@ for arg in "$@"; do
     fi
 done
 
-if docker ps -a --format '{{.Names}}' | grep -q 'marzban-node'; then
+if ! command -v docker &> /dev/null || ! docker info &> /dev/null; then
+    print_info "Docker не установлен или не запущен, пропускаю проверку marzban-node"
+elif docker ps -a --format '{{.Names}}' | grep -q 'marzban-node'; then
     print_warning "Найден контейнер marzban-node"
     echo ""
 
