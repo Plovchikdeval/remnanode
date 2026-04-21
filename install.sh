@@ -45,18 +45,40 @@ fi
 
 print_header
 
-print_step "0" "Проверка и удаление marzban-node"
+print_step "0" "Проверка marzban-node"
+
+REMOVE_MARZBAN=false
+for arg in "$@"; do
+    if [[ "$arg" == "--remove-marzban" ]]; then
+        REMOVE_MARZBAN=true
+    fi
+done
 
 if docker ps -a --format '{{.Names}}' | grep -q 'marzban-node'; then
     print_warning "Найден контейнер marzban-node"
-    echo "Останавливаю и удаляю marzban-node..."
-    
-    docker stop marzban-node 2>/dev/null
-    docker rm marzban-node 2>/dev/null
-    
-    docker volume rm $(docker volume ls -q --filter name=marzban) 2>/dev/null || true
-    
-    print_success "marzban-node удален"
+    echo ""
+
+    if [ "$REMOVE_MARZBAN" = true ]; then
+        print_info "Флаг --remove-marzban передан, удаляю..."
+        REPLY="y"
+    elif [ -t 0 ]; then
+        read -p "Удалить marzban-node? (y/N): " -n 1 -r
+        echo ""
+    else
+        print_info "Неинтерактивный режим: marzban-node оставлен без изменений"
+        print_info "Передайте --remove-marzban для автоматического удаления"
+        REPLY="n"
+    fi
+
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "Останавливаю и удаляю marzban-node..."
+        docker stop marzban-node 2>/dev/null
+        docker rm marzban-node 2>/dev/null
+        docker volume rm $(docker volume ls -q --filter name=marzban) 2>/dev/null || true
+        print_success "marzban-node удален"
+    else
+        print_info "marzban-node оставлен без изменений"
+    fi
 else
     print_success "marzban-node не найден, пропускаю"
 fi
@@ -172,6 +194,8 @@ services:
     image: remnawave/node:latest
     network_mode: host
     restart: always
+    cap_add:
+      - NET_ADMIN
     ulimits:
       nofile:
         soft: 1048576
