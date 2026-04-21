@@ -1,112 +1,112 @@
+# RemnaNode Install Script
 
-# Remnanode — установка и управление
-
-Быстрая и простая установка ноды Remnanode с помощью автоматизированного скрипта.
-
-## 📦 Быстрая установка одной командой
-
-Для установки выполните следующую команду в терминале:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/Plovchikdeval/remnanode/main/install.sh | sudo bash
-```
-
-Что делает эта команда:
-
-· Загружает и запускает скрипт установки с правами суперпользователя (sudo)
-· Автоматически выполняет все шаги настройки
-· Запрашивает ваш SECRET_KEY в процессе установки
-
-📝 Подробная инструкция по установке
-
-Если вы предпочитаете контролировать каждый шаг, выполните следующее:
-
-1. Скачайте скрипт установки:
-   ```bash
-   curl -O https://raw.githubusercontent.com/Plovchikdeval/remnanode/main/install.sh
-   ```
-2. Дайте скрипту права на выполнение:
-   ```bash
-   chmod +x install.sh
-   ```
-3. Запустите скрипт с правами суперпользователя:
-   ```bash
-   sudo ./install.sh
-   ```
-
-🚀 Что делает скрипт установки
-
-Скрипт выполняет следующие шаги:
-
-· Шаг 1: Устанавливает Docker (если ещё не установлен)
-· Шаг 2: Создаёт рабочую директорию /opt/remnanode
-· Шаг 3: Запрашивает ваш SECRET_KEY для настройки ноды
-· Шаг 4: Создаёт файл docker-compose.yml с конфигурацией ноды
-· Шаг 5: Запускает контейнер Remnanode в фоновом режиме
-
-После успешной установки контейнер будет:
-
-· Автоматически перезапускаться при перезагрузке системы
-· Использовать порт 2222 в режиме host network
-· Иметь увеличенные лимиты на количество открытых файлов
-
-🔧 Управление нодой
-
-После установки вы можете управлять нодой с помощью следующих команд (выполняются из директории /opt/remnanode):
-
-Просмотр логов
-
-```bash
-docker compose logs -f
-```
-
-Остановка ноды
-
-```bash
-docker compose down
-```
-
-Запуск ноды (после остановки)
-
-```bash
-docker compose up -d
-```
-
-Проверка статуса контейнера
-
-```bash
-docker ps --filter "name=remnanode"
-```
-
-📁 Расположение файлов
-
-Все файлы конфигурации размещены в директории /opt/remnanode/:
-
-· docker-compose.yml — конфигурационный файл Docker Compose
-
-· Контейнер хранит данные внутри себя согласно настройкам образа remnawave/node:latest
-
-❌ Удаление Remnanode
-
-Для полного удаления ноды выполните:
-
-```bash
-# Остановите и удалите контейнер
-cd /opt/remnanode
-docker compose down
-
-# Удалите директорию с конфигурацией (опционально)
-sudo rm -rf /opt/remnanode
-```
-
-🆘 Получение помощи
-
-Если возникли проблемы с установкой или работой ноды:
-
-1. Проверьте логи: docker compose logs
-2. Убедитесь, что Docker установлен корректно: docker --version
-3. Проверьте, что порт 2222 не занят другим приложением
+Скрипт автоматической установки [Remnawave Node](https://github.com/remnawave/node) через Docker.
 
 ---
 
-💡 Примечание: В процессе установки вам будет предложено ввести ваш SECRET_KEY. Убедитесь, что вы вводите его корректно, так как это критически важный параметр для работы ноды.
+## Требования
+
+- ОС: Ubuntu / Debian / CentOS
+- Права: `root` или `sudo`
+- Docker: устанавливается автоматически при отсутствии
+
+---
+
+## Использование
+
+### Интерактивный режим
+
+```bash
+sudo bash install.sh
+```
+
+Скрипт запросит `SECRET_KEY` и при необходимости задаст уточняющие вопросы.
+
+### Non-interactive (pipe / CI)
+
+```bash
+curl -sSL https://example.com/install.sh | sudo bash -s -- 'YOUR_SECRET_KEY'
+```
+
+#### Флаги
+
+| Флаг | Описание |
+|------|----------|
+| `--remove-marzban` | Автоматически удалить контейнер `marzban-node` без подтверждения |
+
+```bash
+# С удалением marzban-node
+curl -sSL https://example.com/install.sh | sudo bash -s -- 'YOUR_SECRET_KEY' --remove-marzban
+```
+
+---
+
+## Что делает скрипт
+
+| Шаг | Действие |
+|-----|----------|
+| 0 | Проверка и опциональное удаление `marzban-node` |
+| 1 | Проверка / установка Docker |
+| 2 | Создание директории `/opt/remnanode` |
+| 3 | Получение `SECRET_KEY` |
+| 4 | Генерация `docker-compose.yml` |
+| 5 | Запуск контейнера `remnanode` |
+
+---
+
+## Поведение при обнаружении marzban-node
+
+| Режим | Флаг | Поведение |
+|-------|------|-----------|
+| Интерактивный | — | Спрашивает `y/N` |
+| Non-interactive | — | Оставляет без изменений |
+| Non-interactive | `--remove-marzban` | Удаляет автоматически |
+| Docker не установлен | — | Пропускает проверку |
+
+---
+
+## Docker Compose
+
+Итоговый `docker-compose.yml` в `/opt/remnanode/`:
+
+```yaml
+services:
+  remnanode:
+    container_name: remnanode
+    hostname: remnanode
+    image: remnawave/node:latest
+    network_mode: host
+    restart: always
+    cap_add:
+      - NET_ADMIN
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    environment:
+      - NODE_PORT=2222
+      - SECRET_KEY="..."
+```
+
+---
+
+## Управление
+
+```bash
+cd /opt/remnanode
+
+# Логи
+docker compose logs -f
+
+# Остановка
+docker compose down
+
+# Перезапуск
+docker compose restart
+```
+
+---
+
+## Порт
+
+Нода слушает на порту `2222` (`network_mode: host`).
