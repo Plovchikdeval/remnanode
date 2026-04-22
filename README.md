@@ -25,7 +25,7 @@ sudo bash install.sh
 ### Non-interactive (pipe / CI)
 
 ```bash
-curl -sSL https://example.com/install.sh | sudo bash -s -- 'YOUR_SECRET_KEY'
+curl -sSL https://github.com/Plovchikdeval/remnanode/raw/main/install.sh | sudo bash -s -- 'YOUR_SECRET_KEY'
 ```
 
 #### Флаги
@@ -36,7 +36,7 @@ curl -sSL https://example.com/install.sh | sudo bash -s -- 'YOUR_SECRET_KEY'
 
 ```bash
 # С удалением marzban-node
-curl -sSL https://example.com/install.sh | sudo bash -s -- 'YOUR_SECRET_KEY' --remove-marzban
+curl -sSL https://github.com/Plovchikdeval/remnanode/raw/main/install.sh | sudo bash -s -- 'YOUR_SECRET_KEY' --remove-marzban
 ```
 
 ---
