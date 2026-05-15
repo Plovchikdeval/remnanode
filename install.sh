@@ -54,9 +54,9 @@ for arg in "$@"; do
     fi
 done
 
-if ! command -v docker &> /dev/null || ! docker info &> /dev/null; then
+if ! command -v docker &> /dev/null || ! docker info &> /dev/null 2>&1; then
     print_info "Docker не установлен или не запущен, пропускаю проверку marzban-node"
-elif docker ps -a --format '{{.Names}}' | grep -q 'marzban-node'; then
+elif docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q 'marzban-node'; then
     print_warning "Найден контейнер marzban-node"
     echo ""
 
@@ -74,9 +74,9 @@ elif docker ps -a --format '{{.Names}}' | grep -q 'marzban-node'; then
 
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "Останавливаю и удаляю marzban-node..."
-        docker stop marzban-node 2>/dev/null
-        docker rm marzban-node 2>/dev/null
-        docker volume rm $(docker volume ls -q --filter name=marzban) 2>/dev/null || true
+        docker stop marzban-node 2>/dev/null >/dev/null
+        docker rm marzban-node 2>/dev/null >/dev/null
+        docker volume rm $(docker volume ls -q --filter name=marzban 2>/dev/null) 2>/dev/null >/dev/null || true
         print_success "marzban-node удален"
     else
         print_info "marzban-node оставлен без изменений"
@@ -87,20 +87,20 @@ fi
 
 print_step "1" "Проверка и установка Docker"
 
-if command -v docker &> /dev/null && docker --version &> /dev/null; then
+if command -v docker &> /dev/null && docker --version &> /dev/null 2>&1; then
     print_success "Docker уже установлен"
-    echo "Версия Docker: $(docker --version | cut -d' ' -f3 | tr -d ',')"
+    echo "Версия Docker: $(docker --version 2>/dev/null | cut -d' ' -f3 | tr -d ',')"
 else
     echo "Docker не найден. Установка..."
     
-    if curl -fsSL https://get.docker.com | sh; then
+    if curl -fsSL https://get.docker.com | sh >/dev/null 2>&1; then
         print_success "Docker успешно установлен"
         
-        systemctl start docker 2>/dev/null
-        systemctl enable docker 2>/dev/null
+        systemctl start docker >/dev/null 2>&1
+        systemctl enable docker >/dev/null 2>&1
         
         if [ "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
-            usermod -aG docker "$SUDO_USER"
+            usermod -aG docker "$SUDO_USER" >/dev/null 2>&1
             print_info "Пользователь $SUDO_USER добавлен в группу docker"
             print_info "Перелогиньтесь для применения изменений"
         fi
@@ -120,12 +120,12 @@ if [ -d "/opt/remnanode" ]; then
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         print_info "Использую существующую директорию"
     else
-        rm -rf /opt/remnanode/*
+        rm -rf /opt/remnanode/* >/dev/null 2>&1
         print_success "Директория очищена"
     fi
 fi
 
-if mkdir -p /opt/remnanode; then
+if mkdir -p /opt/remnanode >/dev/null 2>&1; then
     print_success "Директория /opt/remnanode создана/используется"
     cd /opt/remnanode || exit 1
 else
@@ -151,7 +151,7 @@ if [ -t 0 ]; then
     done
 else
     print_warning "Неинтерактивный режим. Для ввода ключа используйте:"
-    echo "    curl -sSL <url> | sudo bash -s -- 'YOUR_SECRET_KEY'"
+    echo "    curl -sSL https://github.com/Plovchikdeval/remnanode/raw/main/install.sh | sudo bash -s -- 'YOUR_SECRET_KEY'"
     echo ""
     
     if [ -n "$1" ]; then
@@ -166,12 +166,12 @@ else
         
         if cat > "$TEMP_KEY_FILE" 2>/dev/null; then
             SECRET_KEY=$(cat "$TEMP_KEY_FILE" | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-            rm -f "$TEMP_KEY_FILE"
+            rm -f "$TEMP_KEY_FILE" >/dev/null 2>&1
         else
             print_error "Не удалось получить SECRET_KEY"
             echo ""
             echo "Альтернативные способы установки:"
-            echo "1. Скачайте скрипт: curl -O <url>"
+            echo "1. Скачайте скрипт: curl -O https://github.com/Plovchikdeval/remnanode/raw/main/install.sh"
             echo "2. Запустите: sudo bash install.sh"
             echo "3. Или передайте ключ как аргумент: sudo bash install.sh 'ваш_ключ'"
             exit 1
@@ -196,6 +196,7 @@ services:
     image: remnawave/node:latest
     network_mode: host
     restart: always
+    privileged: true
     cap_add:
       - NET_ADMIN
     ulimits:
@@ -227,18 +228,18 @@ echo "Загрузка и запуск контейнера..."
 
 cd /opt/remnanode || exit 1
 
-if docker ps -a --format '{{.Names}}' | grep -q '^remnanode$'; then
+if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q '^remnanode$'; then
     print_warning "Найден старый контейнер remnanode"
     echo "Останавливаю и удаляю..."
-    docker stop remnanode 2>/dev/null
-    docker rm remnanode 2>/dev/null
+    docker stop remnanode 2>/dev/null >/dev/null
+    docker rm remnanode 2>/dev/null >/dev/null
     print_success "Старый контейнер удален"
 fi
 
 print_info "Проверка обновлений образа..."
-docker pull remnawave/node:latest 2>/dev/null || true
+docker pull remnawave/node:latest >/dev/null 2>&1 || true
 
-if docker compose up -d; then
+if docker compose up -d >/dev/null 2>&1; then
     print_success "Контейнер успешно запущен"
     
     sleep 3
